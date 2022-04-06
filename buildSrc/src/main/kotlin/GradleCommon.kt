@@ -95,9 +95,17 @@ fun Project.createGradleCommonSourceSet(): SourceSet {
     val commonSourceSet = sourceSets.create("common") {
         excludeGradleCommonDependencies(this)
 
+        // Adding Gradle API to separate configuration, so version will not leak into variants
+        val commonGradleApiConfiguration = configurations.create("commonGradleApiCompileOnly") {
+            isVisible = false
+            isCanBeConsumed = false
+            isCanBeResolved = true
+        }
+        configurations[compileClasspathConfigurationName].extendsFrom(commonGradleApiConfiguration)
+
         dependencies {
             compileOnlyConfigurationName(kotlinStdlib())
-            compileOnlyConfigurationName("dev.gradleplugins:gradle-api:7.2")
+            "commonGradleApiCompileOnly"("dev.gradleplugins:gradle-api:7.2")
             if (this@createGradleCommonSourceSet.name != "kotlin-gradle-plugin-api" &&
                 this@createGradleCommonSourceSet.name != "android-test-fixes"
             ) {
@@ -190,12 +198,15 @@ fun Project.wireGradleVariantToCommonGradleVariant(
 ) {
     wireSourceSet.compileClasspath += commonSourceSet.output
     wireSourceSet.runtimeClasspath += commonSourceSet.output
-    @Suppress("deprecation") // Needs support from KGP
-    wireSourceSet.withConvention(KotlinSourceSet::class) {
-        val wireKotlinSourceSet = this
-        commonSourceSet.withConvention(KotlinSourceSet::class) {
-            wireKotlinSourceSet.dependsOn(this)
-        }
+
+    // Allowing to use 'internal' classes/methods from common source code
+    val compileTaskName = if (wireSourceSet.name == SourceSet.MAIN_SOURCE_SET_NAME) {
+        "compileKotlin"
+    } else {
+        "compile${wireSourceSet.name.capitalize()}Kotlin"
+    }
+    tasks.named<KotlinCompile>(compileTaskName) {
+        friendPaths.from(commonSourceSet.output.classesDirs)
     }
 
     configurations[wireSourceSet.apiConfigurationName].extendsFrom(
@@ -294,6 +305,16 @@ fun Project.reconfigureMainSourcesSetForGradlePlugin(
                 }
             }
         }
+    }
+
+    // Fix common sources visibility for tests
+    sourceSets.named(SourceSet.TEST_SOURCE_SET_NAME) {
+        compileClasspath += commonSourceSet.output
+        runtimeClasspath += commonSourceSet.output
+    }
+
+    tasks.named<KotlinCompile>("compileTestKotlin") {
+        friendPaths.from(commonSourceSet.output.classesDirs)
     }
 }
 
