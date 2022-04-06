@@ -1,4 +1,4 @@
--target 1.8
+-target 11
 -dontoptimize
 -dontobfuscate
 # -dontshrink
@@ -7,3 +7,4 @@
 
 -dontnote **
 -dontwarn llvm.**
+-dontwarn kotlin.reflect.full.KClasses
