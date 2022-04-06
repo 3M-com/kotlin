@@ -15,6 +15,7 @@ import org.jetbrains.kotlin.fir.copyWithNewSourceKind
 import org.jetbrains.kotlin.fir.declarations.*
 import org.jetbrains.kotlin.fir.declarations.utils.visibility
 import org.jetbrains.kotlin.fir.resolve.fullyExpandedType
+import org.jetbrains.kotlin.fir.resolve.substitution.ConeSubstitutorByMap
 import org.jetbrains.kotlin.fir.resolve.substitution.substitutorByMap
 import org.jetbrains.kotlin.fir.resolve.toSymbol
 import org.jetbrains.kotlin.fir.resolvedTypeFromPrototype
@@ -22,6 +23,7 @@ import org.jetbrains.kotlin.fir.symbols.ConeTypeParameterLookupTag
 import org.jetbrains.kotlin.fir.symbols.impl.ConeClassLookupTagWithFixedSymbol
 import org.jetbrains.kotlin.fir.symbols.impl.FirClassLikeSymbol
 import org.jetbrains.kotlin.fir.symbols.impl.FirClassifierSymbol
+import org.jetbrains.kotlin.fir.symbols.impl.FirTypeParameterSymbol
 import org.jetbrains.kotlin.fir.types.builder.buildErrorTypeRef
 import org.jetbrains.kotlin.fir.types.builder.buildResolvedTypeRef
 import org.jetbrains.kotlin.fir.types.impl.ConeClassLikeTypeImpl
@@ -318,13 +320,16 @@ fun FirTypeRef.approximated(
 fun FirTypeRef.approximatedIfNeededOrSelf(
     approximator: ConeTypeApproximator,
     containingCallableVisibility: Visibility?,
+    session: FirSession,
     isInlineFunction: Boolean = false,
+    forceHideLocalType: Boolean = false
 ): FirTypeRef {
     val approximated = if (containingCallableVisibility == Visibilities.Public || containingCallableVisibility == Visibilities.Protected)
         approximatedForPublicPosition(approximator)
     else
         this
-    return approximated.hideLocalTypeIfNeeded(containingCallableVisibility, isInlineFunction).withoutEnhancedNullability()
+    return approximated.hideLocalTypeIfNeeded(containingCallableVisibility, session, isInlineFunction, forceHideLocalType)
+        .withoutEnhancedNullability()
 }
 
 fun FirTypeRef.approximatedForPublicPosition(approximator: ConeTypeApproximator): FirTypeRef =
@@ -350,9 +355,12 @@ private fun ConeKotlinType.requiresApproximationInPublicPosition(): Boolean = co
  */
 private fun FirTypeRef.hideLocalTypeIfNeeded(
     containingCallableVisibility: Visibility?,
-    isInlineFunction: Boolean = false
+    session: FirSession,
+    isInlineFunction: Boolean = false,
+    forceHideLocalType: Boolean = false
 ): FirTypeRef {
-    if (!shouldHideLocalType(containingCallableVisibility, isInlineFunction)) return this
+    if (!forceHideLocalType && !shouldHideLocalType(containingCallableVisibility, isInlineFunction)) return this
+
     val firClass =
         (((this as? FirResolvedTypeRef)
             ?.type as? ConeClassLikeType)
@@ -369,7 +377,23 @@ private fun FirTypeRef.hideLocalTypeIfNeeded(
     val superType = firClass.superTypeRefs.single()
     if (superType is FirResolvedTypeRef) {
         val newKind = source?.kind
-        return if (newKind is KtFakeSourceElementKind) superType.copyWithNewSourceKind(newKind) else superType
+        var result = superType
+
+        val resultTypeArguments = result.type.typeArguments
+        if (resultTypeArguments.isNotEmpty() && resultTypeArguments.size == coneType.typeArguments.size) {
+            val substitution = mutableMapOf<FirTypeParameterSymbol, ConeKotlinType>()
+            for (index in resultTypeArguments.indices) {
+                val key = resultTypeArguments[index]
+                val value = coneType.typeArguments[index]
+                val symbol = (key as ConeTypeParameterType).lookupTag.typeParameterSymbol
+                substitution[symbol] = value.type!!
+            }
+
+            val substituted = ConeSubstitutorByMap(substitution, session).substituteOrSelf(result.type)
+            result = substituted.toFirResolvedTypeRef(superType.source, superType.delegatedTypeRef)
+        }
+
+        return if (newKind is KtFakeSourceElementKind) result.copyWithNewSourceKind(newKind) else result
     }
     return this
 }
