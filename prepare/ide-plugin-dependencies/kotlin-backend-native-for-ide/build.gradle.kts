@@ -7,7 +7,7 @@ plugins {
 idePluginDependency {
     if (!kotlinBuildProperties.isKotlinNativeEnabled) return@idePluginDependency
 
-    description = "Stripped down variant of Kotlin Backend Native for IDE"
+    description = "Stripped down variant of Kotlin Backend Native for IDE (AppCode KMM)"
     val jarBaseName = property("archivesBaseName") as String
 
     val proguardLibraryJars by configurations.creating {
