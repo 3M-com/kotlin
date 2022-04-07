@@ -2,8 +2,6 @@ description 'Kotlin Script Runtime'
 
 apply plugin: 'kotlin'
 
-JvmToolchain.configureJvmToolchain(project, JdkMajorVersion.JDK_1_6)
-
 configurePublishing(project)
 
 dependencies {

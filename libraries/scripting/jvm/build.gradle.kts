@@ -3,8 +3,6 @@ plugins {
     id("jps-compatible")
 }
 
-project.configureJvmToolchain(JdkMajorVersion.JDK_1_6)
-
 dependencies {
     api(project(":kotlin-script-runtime"))
     api(kotlinStdlib())

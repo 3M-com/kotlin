@@ -3,8 +3,6 @@ plugins {
     id("jps-compatible")
 }
 
-project.updateJvmTarget("1.6")
-
 configurations.implementation {
     /**
      * Files with the same FQNs may exist both in these excluded artifacts and in dependencies of

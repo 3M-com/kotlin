@@ -3,8 +3,6 @@ plugins {
     id("jps-compatible")
 }
 
-project.updateJvmTarget("1.6")
-
 dependencies {
     api(kotlinStdlib())
     compileOnly(project(":kotlin-reflect-api"))
