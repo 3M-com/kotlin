@@ -8,8 +8,6 @@ idePluginDependency {
     if (!kotlinBuildProperties.isKotlinNativeEnabled) return@idePluginDependency
 
     description = "Stripped down variant of Kotlin Backend Native for IDE"
-    version = kotlinNativeVersion
-
     val jarBaseName = property("archivesBaseName") as String
 
     val proguardLibraryJars by configurations.creating {
@@ -47,7 +45,10 @@ idePluginDependency {
                     "-keep public class !$packageName.backend.konan.objcexport.ObjCExport,$packageName.backend.konan.objcexport.** { public *; }\n" +
                     "-keep public class $packageName.backend.konan.ObjCInteropKt { public *; }\n" +
                     "-keep public class $packageName.backend.konan.ObjCOverridabilityCondition { public *; }\n" +
-                    "-keep public class $packageName.cli.bc.K2NativeCompilerArguments* { public *; }\n"
+                    "-keep public class $packageName.cli.bc.K2NativeCompilerArguments* { public *; }\n" +
+                    "-keep public class $packageName.cli.bc.K2NativeKt { public ** parse*; }\n" +
+                    "-keep public class $packageName.cli.bc.BinaryOptionWithValue { public *; }\n" +
+                    "-keep public class $packageName.backend.konan.BinaryOptions { public *; }\n"
         )
         configuration(config)
 
