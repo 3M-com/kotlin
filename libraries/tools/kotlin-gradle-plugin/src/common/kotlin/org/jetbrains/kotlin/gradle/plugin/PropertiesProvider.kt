@@ -438,8 +438,8 @@ internal class PropertiesProvider private constructor(private val project: Proje
     val createArchiveTasksForCustomCompilations: Boolean
         get() = booleanProperty(KOTLIN_CREATE_ARCHIVE_TASKS_FOR_CUSTOM_COMPILATIONS) ?: false
 
-    val runKotlinCompilerViaBuildToolsApi: Boolean
-        get() = booleanProperty(KOTLIN_RUN_COMPILER_VIA_BUILD_TOOLS_API) ?: false
+    val runKotlinCompilerViaBuildToolsApi: Provider<Boolean>
+        get() = booleanProvider(KOTLIN_RUN_COMPILER_VIA_BUILD_TOOLS_API).orElse(false)
 
     val allowLegacyMppDependencies: Boolean
         get() = booleanProperty(KOTLIN_MPP_ALLOW_LEGACY_DEPENDENCIES) ?: false
@@ -544,7 +544,7 @@ internal class PropertiesProvider private constructor(private val project: Proje
         get() = booleanProperty(PropertyNames.KOTLIN_NATIVE_ENABLE_KLIBS_CROSSCOMPILATION) ?: false
 
     val kotlinKmpProjectIsolationEnabled: Boolean
-        get() = booleanProperty(PropertyNames.KOTLIN_KMP_PORJECT_ISOLATION_ENABLED) ?: false
+        get() = booleanProperty(PropertyNames.KOTLIN_KMP_PORJECT_ISOLATION_ENABLED) ?: true
 
     /**
      * Enable workaround for KT-64115, where both main compilation exploded klib and the same compressed klib
@@ -577,6 +577,9 @@ internal class PropertiesProvider private constructor(private val project: Proje
 
     private fun booleanProperty(propName: String): Boolean? =
         get(propName)?.toBoolean()
+
+    private fun booleanProvider(propName: String): Provider<Boolean> =
+        getProvider(propName).map { it.toBoolean() }
 
     private inline fun <reified T : Enum<T>> enumProperty(
         propName: String,

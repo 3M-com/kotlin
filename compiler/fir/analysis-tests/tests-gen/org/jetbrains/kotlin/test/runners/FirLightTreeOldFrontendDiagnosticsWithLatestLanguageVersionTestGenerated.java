@@ -640,6 +640,12 @@ public class FirLightTreeOldFrontendDiagnosticsWithLatestLanguageVersionTestGene
     }
 
     @Test
+    @TestMetadata("illegalCharsInPackageWithDots.kt")
+    public void testIllegalCharsInPackageWithDots() {
+      runTest("compiler/testData/diagnostics/tests/illegalCharsInPackageWithDots.kt");
+    }
+
+    @Test
     @TestMetadata("implicitIntersection.kt")
     public void testImplicitIntersection() {
       runTest("compiler/testData/diagnostics/tests/implicitIntersection.kt");
@@ -7804,6 +7810,12 @@ public class FirLightTreeOldFrontendDiagnosticsWithLatestLanguageVersionTestGene
       @TestMetadata("kt897.kt")
       public void testKt897() {
         runTest("compiler/testData/diagnostics/tests/controlFlowAnalysis/kt897.kt");
+      }
+
+      @Test
+      @TestMetadata("lambdaCaptureUninitializedProperty.kt")
+      public void testLambdaCaptureUninitializedProperty() {
+        runTest("compiler/testData/diagnostics/tests/controlFlowAnalysis/lambdaCaptureUninitializedProperty.kt");
       }
 
       @Test
